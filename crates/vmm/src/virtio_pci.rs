@@ -8,6 +8,7 @@
 use crate::bus::{PciBus, PciDevice};
 use avm_core::{AvmError, AvmResult};
 use avm_devices::virtio_blk::VirtioBlk;
+use avm_devices::virtio_gpu::VirtioGpu;
 use avm_devices::virtio_net::{NetBackend, VirtioNet};
 
 /// virtio-blk PCI 适配器。
@@ -69,6 +70,68 @@ impl PciDevice for VirtioBlkPci {
         }
         let _ = size;
         Ok(()) // notify：M3+ 在此触发 process_queue
+    }
+}
+
+/// virtio-gpu PCI 适配器（0x1AF4:0x1010，显示类 0x03）。
+/// BAR0 布局：0x000..0x0FF 预留；0x100..0x200 notify 区（M4a 无 device config）。
+pub struct VirtioGpuPci {
+    gpu: VirtioGpu,
+}
+
+impl VirtioGpuPci {
+    pub fn new() -> Self {
+        Self {
+            gpu: VirtioGpu::new(),
+        }
+    }
+
+    pub fn gpu(&self) -> &VirtioGpu {
+        &self.gpu
+    }
+
+    pub fn gpu_mut(&mut self) -> &mut VirtioGpu {
+        &mut self.gpu
+    }
+}
+
+impl Default for VirtioGpuPci {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PciDevice for VirtioGpuPci {
+    fn vendor_id(&self) -> u16 {
+        0x1AF4
+    }
+
+    fn device_id(&self) -> u16 {
+        0x1010
+    }
+
+    fn class_code(&self) -> u8 {
+        0x03 // 显示控制器
+    }
+
+    fn bar0_size(&self) -> u32 {
+        4096
+    }
+
+    fn bar0_read(&self, _offset: u64, _size: u8) -> AvmResult<u32> {
+        Err(AvmError::Device(
+            "virtio-gpu BAR0 读未实现（M4a 无 device config）".into(),
+        ))
+    }
+
+    fn bar0_write(&mut self, offset: u64, size: u8, _value: u32) -> AvmResult<()> {
+        if !(0x100..0x200).contains(&offset) {
+            return Err(AvmError::Device(format!(
+                "BAR0 写越界/未实现：offset=0x{offset:03x}"
+            )));
+        }
+        let _ = size;
+        Ok(()) // notify：M4b+ 在此触发 process_ctrl_queue
     }
 }
 
@@ -151,6 +214,21 @@ mod tests {
     use super::*;
     use crate::bus::cfg;
     use avm_devices::virtio_net::{LoopbackBackend, VIRTIO_NET_S_LINK_UP};
+
+    #[test]
+    fn gpu_pci_identity() {
+        let mut bus = PciBus::new();
+        let slot = bus.attach(Box::new(VirtioGpuPci::new())).unwrap();
+        assert_eq!(bus.config_read(slot, cfg::VENDOR_ID, 2).unwrap(), 0x1AF4);
+        assert_eq!(bus.config_read(slot, cfg::DEVICE_ID, 2).unwrap(), 0x1010);
+        assert_eq!(
+            bus.config_read(slot, cfg::CLASS_CODE, 4).unwrap(),
+            0x0300_0000
+        );
+        let base = bus.devices()[slot].bar0_base;
+        assert!(bus.mmio_write(base + 0x110, 4, 0).is_ok()); // notify 区
+        assert!(bus.mmio_read(base + 0x110, 1).is_err()); // 读未实现
+    }
 
     #[test]
     fn blk_pci_identity() {

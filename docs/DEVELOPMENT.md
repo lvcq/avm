@@ -44,10 +44,12 @@
 - `vmm/virtio_pci.rs`：`VirtioNetPci` 适配器（0x1AF4:0x1000，网络类 0x02，BAR0 0x100 MAC/链路 config、0x108 notify）。
 - 61 单测全绿 0 警告（含 tx→后端、后端→rx 注入、自环 roundtrip、缓冲不足报错、无帧 0 used）。
 - 待办：真机 TAP 后端（Windows TAP/WSL 网桥）+ guest 驱动探测 → adb over TCP。
-### M4a：virtio-gpu 2D scanout
-- 实现 scanout → host 窗口呈现；`assist::AdbChannel::screenshot()` 走帧缓冲。
-- 出口：可截图。
-
+### M4a：virtio-gpu 2D scanout ✅ 代码完成（真机显示待 Windows WHPX）
+- `devices/virtio_gpu.rs`：controlq 最小 2D 协议（GET_DISPLAY_INFO / RESOURCE_CREATE_2D / UNREF / ATTACH_BACKING / TRANSFER_TO_HOST_2D / SET_SCANOUT / RESOURCE_FLUSH），B8G8R8A8，固定 800x600 单显示头；`framebuffer()` 即截图出口。
+- `vmm/virtio_pci.rs`：`VirtioGpuPci`（0x1AF4:0x1010，显示类 0x03）。
+- 68 单测全绿 0 警告（全链路 create→attach→transfer→scanout→flush→逐像素截图比对）。
+- 坑：测试多命令复用 avail ring 时**不可重置 avail idx 为 0**——设备侧 next_avail 已前进，重置后 (idx−next_avail) 回绕导致链不被消费。
+- 待办：真机 scanout 呈现到窗口（M4b）。
 ### M5：Android x86_64 完整启动
 - goldfish kernel + Android x86_64 镜像（含 virtio 驱动）；桌面可见、adb 可用。
 
