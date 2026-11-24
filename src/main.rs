@@ -13,21 +13,46 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.get(1).map(String::as_str).unwrap_or("help");
     match cmd {
-        "doctor" => doctor(),
+        "doctor" => match avm_hypervisor::doctor::report() {
+            Ok(true) => println!("环境检测通过"),
+            Ok(false) => {
+                println!("环境检测未通过");
+                std::process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("doctor 失败：{e}");
+                std::process::exit(2);
+            }
+        },
+        "start" => {
+            // M0：--toy 走 toy guest（真实 WHPX 上串口打印；非 Windows 报错）
+            if args.iter().any(|a| a == "--toy") {
+                // Windows 上用真实 WHPX；其它平台回退 Null（报错提示）
+                let hv: Box<dyn avm_hypervisor::Hypervisor> =
+                    match avm_hypervisor::whp::WhpHypervisor::new() {
+                        Ok(whp) => Box::new(whp),
+                        Err(_) => Box::new(avm_hypervisor::NullHypervisor),
+                    };
+                let hv = &*hv;
+                match avm_vmm::boot_toy_guest(hv) {
+                    Ok(_) => println!("toy guest 已 halt"),
+                    Err(e) => {
+                        eprintln!("toy guest 启动失败：{e}");
+                        std::process::exit(3);
+                    }
+                }
+            } else {
+                eprintln!("start：等待 M1 Linux 引导（当前仅支持 --toy）");
+                std::process::exit(2);
+            }
+        }
         "list" => list(),
-        "start" | "stop" => {
-            eprintln!("{cmd}：等待 M6 daemon/API 实现");
+        "stop" => {
+            eprintln!("stop：等待 M6 daemon/API 实现");
             std::process::exit(2);
         }
         _ => help(),
     }
-}
-
-fn doctor() {
-    println!("avm doctor —— 环境检测（M0 里程碑填充真实检测项）");
-    println!("  [ ] WHPX 已启用（Windows 可选功能：虚拟机平台）");
-    println!("  [ ] 与 HAXM 无冲突");
-    println!("  [ ] WinHvPlatform.dll 可加载");
 }
 
 fn list() {

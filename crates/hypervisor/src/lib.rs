@@ -3,6 +3,7 @@
 //! 分层契约：vmm 只依赖本 crate 的 `Hypervisor` trait；
 //! 平台实现（whp / kvm / hvf）各自独立模块，编译期 feature 选择。
 
+pub mod doctor;
 pub mod whp;
 
 use avm_core::{AvmError, AvmResult};

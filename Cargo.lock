@@ -79,5 +79,6 @@ name = "avm-vmm"
 version = "0.1.0"
 dependencies = [
  "avm-core",
+ "avm-devices",
  "avm-hypervisor",
 ]

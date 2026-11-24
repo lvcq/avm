@@ -29,7 +29,11 @@ impl InstanceRegistry {
     }
 
     pub fn list(&self) -> Vec<(String, InstanceState)> {
-        let mut v: Vec<_> = self.instances.iter().map(|(k, s)| (k.clone(), *s)).collect();
+        let mut v: Vec<_> = self
+            .instances
+            .iter()
+            .map(|(k, s)| (k.clone(), *s))
+            .collect();
         v.sort();
         v
     }

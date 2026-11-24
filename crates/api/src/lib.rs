@@ -9,7 +9,7 @@
 //! POST   /api/instances/:id/snapshot  快照/恢复
 //! GET    /healthz                  健康检查
 
-use avm_core::{InstanceState};
+use avm_core::InstanceState;
 use serde_placeholder::InstanceDto;
 
 /// DTO 定义（M6 引入 serde 后真实化；骨架阶段为纯数据结构）。

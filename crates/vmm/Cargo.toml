@@ -7,3 +7,4 @@ license.workspace = true
 [dependencies]
 avm-core = { workspace = true }
 avm-hypervisor = { workspace = true }
+avm-devices = { workspace = true }
