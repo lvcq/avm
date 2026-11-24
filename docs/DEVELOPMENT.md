@@ -25,9 +25,11 @@
 2. `vmm`：写 toy guest（16 位实模式引导扇区，打印字符到 0x3F8 串口）→ `SerialUart` write 已可用。
 3. 出口：`avm start --toy` 在串口打印。
 
-### M1：Linux 引导
-- 引入 `linux-loader`、`vm-memory`；实现 `VmInstance::boot()`：加载 bzImage + initrd、设置 64 位长模式寄存器、跳转。
-- 出口：guest 进入 shell（串口交互）。
+### M1：Linux 引导 ✅ 代码完成（真机验证待 Windows WHPX）
+- 已引入 `linux-loader 0.12`（bzimage）+ `vm-memory 0.15`（backend-mmap，与 linux-loader 0.12 对齐）。
+- `vmm/boot.rs`：`load_kernel()`（BzImage::load + 自实现 initrd 紧跟内核 2MiB 对齐加载 + Cmdline 写入）、`boot_regs()`（RIP=kernel_load, CS=0x08/base=0）；内存布局见 `layout` 模块。
+- 假 bzImage 测试镜像覆盖：合法头加载、非法头拒绝、initrd 越界拒绝、cmdline/initrd 内容校验。
+- 待办：真机 bzImage + initrd（Windows WHPX 上 run_vcpu 跳长模式入口）→ guest shell 串口。
 
 ### M2：PCI + virtio-blk
 - 引入 `acpi_tables`、`virtio-queue`、`virtio-bindings`；实现 PCI 总线（vmm/bus）+ `VirtioBlk` 真实读写。

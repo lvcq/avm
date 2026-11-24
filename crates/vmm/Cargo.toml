@@ -8,3 +8,5 @@ license.workspace = true
 avm-core = { workspace = true }
 avm-hypervisor = { workspace = true }
 avm-devices = { workspace = true }
+vm-memory = { workspace = true }
+linux-loader = { workspace = true }

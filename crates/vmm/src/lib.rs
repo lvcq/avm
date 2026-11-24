@@ -3,6 +3,7 @@
 //! 组合 hypervisor 与 devices，负责内存布局、内核加载（linux-loader）、
 //! ACPI 表生成（acpi-tables）、virtio 总线挂载与 vcpu 调度循环。
 
+pub mod boot;
 pub mod mock;
 pub mod toy;
 
@@ -38,6 +39,7 @@ impl VmmBuilder {
         hv.create_partition(self.config.vcpus, self.config.memory_mib)?;
         Ok(VmInstance {
             state: InstanceState::Created,
+            _config: self.config.clone(),
         })
     }
 }
@@ -46,12 +48,29 @@ impl VmmBuilder {
 #[derive(Debug)]
 pub struct VmInstance {
     pub state: InstanceState,
+    _config: InstanceConfig,
 }
 
 impl VmInstance {
-    /// M1：加载内核与 initrd，进入 guest shell。
-    pub fn boot(&mut self) -> AvmResult<()> {
-        Err(AvmError::Boot("boot: M1 里程碑实现".into()))
+    /// M1：加载内核与 initrd，设置长模式入口（真机执行待 WHPX 验证）。
+    ///
+    /// 返回 vcpu 初始寄存器；实际 `run_vcpu` 由 daemon/CLI 层驱动。
+    pub fn boot(&mut self, hv: &dyn Hypervisor, assets: &boot::BootAssets) -> AvmResult<boot::VcpuBootRegs> {
+        if self.config().memory_mib < boot::layout::MIN_MEMORY_MIB {
+            return Err(AvmError::Config(format!(
+                "Linux 引导至少需要 {} MiB 内存",
+                boot::layout::MIN_MEMORY_MIB
+            )));
+        }
+        let loaded = boot::load_kernel(self.config().memory_mib, assets)?;
+        let regs = boot::boot_regs(&loaded.kernel)?;
+        self.state = InstanceState::Booting;
+        let _ = (hv, loaded); // 分区与 guest 内存由 daemon 层持有（M6 收口）
+        Ok(regs)
+    }
+
+    pub fn config(&self) -> &InstanceConfig {
+        &self._config
     }
 
     /// M6：由 daemon 通过 API 调用。
