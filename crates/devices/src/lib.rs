@@ -92,5 +92,7 @@ mod tests {
         assert!(blk.read(0, 4).is_err());
     }
 }
+pub mod bmp;
+pub mod display;
 pub mod virtio_gpu;
 pub mod virtio_net;

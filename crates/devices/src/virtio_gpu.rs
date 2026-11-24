@@ -15,6 +15,7 @@ use virtio_queue::QueueT;
 use virtio_queue::{Error as VqError, QueueOwnedT};
 use vm_memory::{Bytes, GuestAddress, GuestMemoryMmap};
 
+use crate::display::FrameSink;
 use crate::virtio_blk::split64;
 
 /// 单队列深度。
@@ -154,6 +155,8 @@ pub struct VirtioGpu {
     ctrl_queue: Option<Queue>,
     /// 光标队列（M4a 预留，不处理）。
     _cursor_queue: Option<Queue>,
+    /// 呈现后端（M4b：flush 后调用）。
+    sink: Option<Box<dyn FrameSink>>,
 }
 
 impl VirtioGpu {
@@ -164,7 +167,13 @@ impl VirtioGpu {
             framebuffer: vec![0; DISPLAY_WIDTH as usize * DISPLAY_HEIGHT as usize * PIXEL_SIZE],
             ctrl_queue: None,
             _cursor_queue: None,
+            sink: None,
         }
+    }
+
+    /// 挂载呈现后端（M4b）。
+    pub fn set_sink(&mut self, sink: Box<dyn FrameSink>) {
+        self.sink = Some(sink);
     }
 
     pub fn setup_ctrl_queue(&mut self, mem: &GuestMemoryMmap) -> AvmResult<()> {
@@ -520,6 +529,9 @@ impl VirtioGpu {
             self.framebuffer[dst..dst + w * PIXEL_SIZE]
                 .copy_from_slice(&resource.image[src..src + w * PIXEL_SIZE]);
         }
+        if let Some(sink) = self.sink.as_mut() {
+            sink.present(DISPLAY_WIDTH, DISPLAY_HEIGHT, &self.framebuffer)?;
+        }
         Ok(())
     }
 }
@@ -820,6 +832,34 @@ mod tests {
         assert_eq!(&fb[off_r2..off_r2 + PIXEL_SIZE], &[0x42, 0x42, 0x42, 0x42]);
         // 未写入区域保持 0
         assert_eq!(&fb[0..PIXEL_SIZE], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn flush_presents_to_bmp_sink() {
+        use crate::display::BmpSink;
+        let mut dev = VirtioGpu::new();
+        let path = std::env::temp_dir().join("avm-gpu-scanout.bmp");
+        dev.set_sink(Box::new(BmpSink::new(&path)));
+        let mem = make_mem();
+        dev.setup_ctrl_queue(mem.as_ref()).unwrap();
+        // 最小链路：create → flush（未绑定 scanout 应报错，不落盘）
+        let mut p = [0u8; 20];
+        p[16..20].copy_from_slice(&9u32.to_le_bytes());
+        command(
+            mem.as_ref(),
+            VIRTIO_GPU_CMD_RESOURCE_FLUSH,
+            &p,
+            PAYLOAD,
+            RESP,
+            32,
+        );
+        dev.process_ctrl_queue(mem.as_ref()).unwrap();
+        assert_eq!(
+            read_resp(mem.as_ref(), RESP),
+            VIRTIO_GPU_RESP_ERR_INVALID_RESOURCE_ID
+        );
+        assert!(!path.exists());
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
