@@ -56,10 +56,13 @@
 - `deviceset.rs`：DeviceSet 编排 blk/net/gpu 三设备挂 PCI 总线；`as_any` 下转型直取设备（截图/容量校验出口）；`android_default()`（2GiB 盘、固定 MAC 52:54:00:41:56:4D）。
 - 79 单测全绿 0 警告。
 - 待办：真机取 Android-x86 镜像（goldfish kernel + rootfs）→ WHPX 全链启动 → adb over TCP 连通。
-### M6：daemon + api + client
-- 引入 tokio + axum；实现 `api::router()`（路由表已写在 api/src/lib.rs 注释）、`daemon::run_daemon()`；CLI 切换为 `DaemonClient` 模式。
-- 出口：`avmd &` 后 `avm list/start/stop` 可用。
-
+### M6：daemon + api + client ✅ 代码完成
+- `api`：axum HTTP API（/health、GET/POST /vms、GET/DELETE /vms/{id}、POST /vms/{id}/boot|stop）；VmStore 内存状态机（Created→Booting→Running，非法迁移 409）；tower oneshot 路由测试。
+- `daemon`：`run_daemon(listen)` 阻塞启动（内建 tokio multi-thread runtime）+ `serve()` 嵌入式；轻量 InstanceRegistry（pool 骨架依赖保留）。
+- `client`：ureq 阻塞客户端（health/list/create/get/boot/stop/delete，404→None/false 映射）。
+- CLI：`avm daemon --listen` / `list` / `create` / `boot` / `stop` / `delete`，`--url` 指定 daemon。
+- 验证：84 单测全绿 0 警告；E2E 实跑（daemon 7879 + CLI create→boot→list→stop→delete 全链路）。
+- 坑：①`#[tokio::test]` 默认 current_thread runtime，测试内 ureq 阻塞调用会饿死同 runtime 的 serve 任务→用 flavor="multi_thread"；②pkill -f "cargo test" 会连自己的 bash 包装一起杀；③axum 0.8 路由捕获用 {id}（:id 会 panic）；④grep -c 无匹配 exit 1 会断 && 链。
 ### M7：NSH 面板
 - `panel`：接入 NSH UI 与 `set_tray`；关闭按钮 → 隐藏到托盘。
 - 出口：面板可管理实例。

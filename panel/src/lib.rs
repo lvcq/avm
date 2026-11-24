@@ -3,25 +3,25 @@
 //! 基于 NSH（Native Shell / Tray Rust API）。关闭按钮隐藏到托盘，
 //! 实例由 avmd 继续持有，面板只是客户端视图。
 
-use avm_client::DaemonClient;
+use avm_client::Client;
 use avm_core::AvmResult;
 
 /// 面板状态。
 #[derive(Debug)]
 pub struct Panel {
-    client: DaemonClient,
+    client: Client,
 }
 
 impl Panel {
     pub fn new(daemon_url: impl Into<String>) -> Self {
         Self {
-            client: DaemonClient::new(daemon_url),
+            client: Client::new(&daemon_url.into()),
         }
     }
 
     /// 刷新面板显示的实例列表（M7 接 NSH 真实 UI）。
     pub fn refresh(&self) -> AvmResult<Vec<String>> {
-        self.client.list_instances()
+        Ok(self.client.list()?.into_iter().map(|v| v.id).collect())
     }
 }
 

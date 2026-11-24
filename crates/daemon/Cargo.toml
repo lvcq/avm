@@ -5,4 +5,10 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+avm-api = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true }
 avm-core = { workspace = true }
+
+[dev-dependencies]
+avm-client = { workspace = true }
