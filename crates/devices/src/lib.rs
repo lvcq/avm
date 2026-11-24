@@ -13,6 +13,8 @@ pub trait BusDevice: Send {
     fn write(&mut self, offset: u64, size: u8, value: u64) -> AvmResult<()>;
 }
 
+pub mod virtio_blk;
+
 /// 16550 串口：M0/M1 引导输出通道（toy guest 的打印出口）。
 #[derive(Debug, Default)]
 pub struct SerialUart;

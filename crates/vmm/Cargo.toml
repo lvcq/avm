@@ -10,3 +10,6 @@ avm-hypervisor = { workspace = true }
 avm-devices = { workspace = true }
 vm-memory = { workspace = true }
 linux-loader = { workspace = true }
+acpi_tables = { workspace = true }
+virtio-queue = { workspace = true }
+virtio-bindings = { workspace = true }

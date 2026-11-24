@@ -44,10 +44,13 @@ avm-client = { path = "crates/client" }
 avm-panel = { path = "panel" }
 
 
-vm-memory = { version = "0.15", features = ["backend-mmap"] }
-linux-loader = { version = "0.12", features = ["bzimage"] }
+vm-memory = { version = "0.16", features = ["backend-mmap"] }
+linux-loader = { version = "0.13", features = ["bzimage"] }
 # linux-loader 0.12 需要 vm-memory backend-mmap 特性
 # thiserror / tokio / axum
+acpi_tables = "0.2"
+virtio-queue = "0.14"
+virtio-bindings = "0.2"
 # rutabaga_gfx (git, M9)
 
 [profile.release]

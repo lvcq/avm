@@ -6,3 +6,6 @@ license.workspace = true
 
 [dependencies]
 avm-core = { workspace = true }
+virtio-queue = { workspace = true }
+virtio-bindings = { workspace = true }
+vm-memory = { workspace = true }

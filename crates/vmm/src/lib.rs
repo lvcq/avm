@@ -3,9 +3,12 @@
 //! 组合 hypervisor 与 devices，负责内存布局、内核加载（linux-loader）、
 //! ACPI 表生成（acpi-tables）、virtio 总线挂载与 vcpu 调度循环。
 
+pub mod acpi;
 pub mod boot;
+pub mod bus;
 pub mod mock;
 pub mod toy;
+pub mod virtio_pci;
 
 use crate::toy::{SERIAL_PORT, TOY_ENTRY_RIP, TOY_LOAD_GPA};
 use avm_core::{AvmError, AvmResult, InstanceConfig, InstanceState};
@@ -55,7 +58,11 @@ impl VmInstance {
     /// M1：加载内核与 initrd，设置长模式入口（真机执行待 WHPX 验证）。
     ///
     /// 返回 vcpu 初始寄存器；实际 `run_vcpu` 由 daemon/CLI 层驱动。
-    pub fn boot(&mut self, hv: &dyn Hypervisor, assets: &boot::BootAssets) -> AvmResult<boot::VcpuBootRegs> {
+    pub fn boot(
+        &mut self,
+        hv: &dyn Hypervisor,
+        assets: &boot::BootAssets,
+    ) -> AvmResult<boot::VcpuBootRegs> {
         if self.config().memory_mib < boot::layout::MIN_MEMORY_MIB {
             return Err(AvmError::Config(format!(
                 "Linux 引导至少需要 {} MiB 内存",

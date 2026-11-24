@@ -31,9 +31,13 @@
 - 假 bzImage 测试镜像覆盖：合法头加载、非法头拒绝、initrd 越界拒绝、cmdline/initrd 内容校验。
 - 待办：真机 bzImage + initrd（Windows WHPX 上 run_vcpu 跳长模式入口）→ guest shell 串口。
 
-### M2：PCI + virtio-blk
-- 引入 `acpi_tables`、`virtio-queue`、`virtio-bindings`；实现 PCI 总线（vmm/bus）+ `VirtioBlk` 真实读写。
-- 出口：guest 挂载 rootfs。
+### M2：PCI + virtio-blk ✅ 代码完成（真机验证待 Windows WHPX）
+- 已引入 `virtio-queue 0.14` + `virtio-bindings 0.2` + `acpi_tables 0.2`（vm-memory 统一 0.16；linux-loader 升 0.13）。
+- `vmm/bus.rs`：PCI Type-0 配置空间（1/2/4 字节读，类代码字节序 rev|prog_if|subclass|base）+ BAR0 4KiB 对齐分配与 MMIO 路由。
+- `devices/virtio_blk.rs`：virtio-queue Queue + 手写 desc 表测试；请求协议 IN/OUT/UNSUP，数据面 IO 错误回 IOERR 不中止队列；写后读 roundtrip 验证。
+- `vmm/virtio_pci.rs`：0x1AF4:0x1001 适配器（BAR0 0x100 容量 config / 0x108 notify 区）。
+- `vmm/acpi.rs`：RSDP + XSDT + SSDT（校验和全 0 验证）。
+- 待办：真机 bzImage rootfs 挂载（依赖 Windows WHPX vcpu 执行）。
 
 ### M3：virtio-net
 - 用户态网络（tap/slug 或用户态栈），出口：host 上 `adb connect <guest-ip>:5555` 成功。
