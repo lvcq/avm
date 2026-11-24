@@ -1,0 +1,53 @@
+[package]
+name = "avm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+avm-core = { workspace = true }
+avm-vmm = { workspace = true }
+avm-hypervisor = { workspace = true }
+avm-daemon = { workspace = true }
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/hypervisor",
+    "crates/vmm",
+    "crates/devices",
+    "crates/daemon",
+    "crates/pool",
+    "crates/assist",
+    "crates/api",
+    "crates/client",
+    "panel",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.75"
+
+[workspace.dependencies]
+avm-core = { path = "crates/core" }
+avm-hypervisor = { path = "crates/hypervisor" }
+avm-vmm = { path = "crates/vmm" }
+avm-devices = { path = "crates/devices" }
+avm-daemon = { path = "crates/daemon" }
+avm-pool = { path = "crates/pool" }
+avm-assist = { path = "crates/assist" }
+avm-api = { path = "crates/api" }
+avm-client = { path = "crates/client" }
+avm-panel = { path = "panel" }
+
+# —— 后续开发引入（M0 起逐步启用，骨架阶段为保持离线可编译未列入依赖）——
+# vm-memory / linux-loader / acpi-tables / virtio-queue / virtio-bindings
+# thiserror / tokio / axum
+# rutabaga_gfx (git, M9)
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
