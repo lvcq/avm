@@ -71,6 +71,10 @@ impl PciDevice for VirtioBlkPci {
         let _ = size;
         Ok(()) // notify：M3+ 在此触发 process_queue
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 /// virtio-gpu PCI 适配器（0x1AF4:0x1010，显示类 0x03）。
@@ -132,6 +136,10 @@ impl PciDevice for VirtioGpuPci {
         }
         let _ = size;
         Ok(()) // notify：M4b+ 在此触发 process_ctrl_queue
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -199,6 +207,10 @@ impl PciDevice for VirtioNetPci {
         }
         let _ = size;
         Ok(()) // notify：M3+ 在此触发 process_rx/process_tx
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

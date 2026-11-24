@@ -16,6 +16,23 @@ use std::io::{Cursor, Read};
 use vm_memory::{Address, Bytes, GuestAddress, GuestMemoryMmap};
 
 /// x86_64 下经典 Linux 内存布局（与 QEMU pc 机保持一致，便于后续兼容）。
+/// Android x86_64 引导配置（M5）。
+pub mod android {
+    /// Android 引导内核命令行模板（android-x86 常用参数 + 串口控制台）。
+    pub const CMDLINE_TEMPLATE: &str = "console=ttyS0,115200 root=/dev/ram0 \
+androidboot.hardware=android_x86_64 androidboot.selinux=permissive \
+androidboot.debuggable=1 quiet loglevel=5";
+
+    /// 生成 Android 命令行（可追加自定义参数）。
+    pub fn cmdline(extra: &str) -> String {
+        if extra.is_empty() {
+            CMDLINE_TEMPLATE.to_string()
+        } else {
+            format!("{CMDLINE_TEMPLATE} {extra}")
+        }
+    }
+}
+
 pub mod layout {
     /// 常规内存起点。
     pub const RAM_START: u64 = 0x0;
@@ -143,6 +160,16 @@ pub fn boot_regs(kernel: &KernelLoaderResult) -> Result<VcpuBootRegs, avm_core::
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn android_cmdline_preset() {
+        let c = super::android::cmdline("");
+        assert!(c.starts_with("console=ttyS0,115200"));
+        assert!(c.contains("androidboot.hardware=android_x86_64"));
+        assert!(c.contains("androidboot.selinux=permissive"));
+        let c2 = super::android::cmdline("vmargin=0x1");
+        assert!(c2.ends_with("vmargin=0x1"));
+    }
+
     use super::*;
     use std::io::Write;
 

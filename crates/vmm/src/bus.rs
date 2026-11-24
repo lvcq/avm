@@ -16,6 +16,8 @@ pub trait PciDevice: Send {
     /// 设备收到 BAR0 MMIO 读写。
     fn bar0_read(&self, offset: u64, size: u8) -> AvmResult<u32>;
     fn bar0_write(&mut self, offset: u64, size: u8, value: u32) -> AvmResult<()>;
+    /// 下转型支持（DeviceSet 取回具体设备）。
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 /// 配置空间寄存器偏移（Type-0 头）。
@@ -162,6 +164,10 @@ mod tests {
     }
 
     impl PciDevice for FakeDev {
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+
         fn vendor_id(&self) -> u16 {
             VIRTIO_VENDOR_ID
         }
@@ -207,6 +213,10 @@ mod tests {
     fn attach_rejects_bad_bar_size() {
         struct BadDev;
         impl PciDevice for BadDev {
+            fn as_any(&self) -> &dyn std::any::Any {
+                self
+            }
+
             fn vendor_id(&self) -> u16 {
                 0
             }

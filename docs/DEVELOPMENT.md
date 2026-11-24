@@ -50,9 +50,12 @@
 - 68 单测全绿 0 警告（全链路 create→attach→transfer→scanout→flush→逐像素截图比对）。
 - 坑：测试多命令复用 avail ring 时**不可重置 avail idx 为 0**——设备侧 next_avail 已前进，重置后 (idx−next_avail) 回绕导致链不被消费。
 - 待办：真机 scanout 呈现到窗口（M4b）。
-### M5：Android x86_64 完整启动
-- goldfish kernel + Android x86_64 镜像（含 virtio 驱动）；桌面可见、adb 可用。
-
+### M5：Android x86_64 完整启动 ✅ 代码完成（真机启动待 Windows WHPX + Android 镜像）
+- `boot.rs::android`：Android 引导 cmdline 预设（console=ttyS0、androidboot.hardware=android_x86_64、selinux=permissive，可追加自定义参数）。
+- `acpi.rs`：MADT 生成（N×LAPIC + IOAPIC，x86 LAPIC MMIO 0xFEE00000），XSDT 登记 MADT+SSDT；build(vcpus) 校验 1..=255。
+- `deviceset.rs`：DeviceSet 编排 blk/net/gpu 三设备挂 PCI 总线；`as_any` 下转型直取设备（截图/容量校验出口）；`android_default()`（2GiB 盘、固定 MAC 52:54:00:41:56:4D）。
+- 79 单测全绿 0 警告。
+- 待办：真机取 Android-x86 镜像（goldfish kernel + rootfs）→ WHPX 全链启动 → adb over TCP 连通。
 ### M6：daemon + api + client
 - 引入 tokio + axum；实现 `api::router()`（路由表已写在 api/src/lib.rs 注释）、`daemon::run_daemon()`；CLI 切换为 `DaemonClient` 模式。
 - 出口：`avmd &` 后 `avm list/start/stop` 可用。

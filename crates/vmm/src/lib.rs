@@ -6,6 +6,7 @@
 pub mod acpi;
 pub mod boot;
 pub mod bus;
+pub mod deviceset;
 pub mod mock;
 pub mod toy;
 pub mod virtio_pci;
