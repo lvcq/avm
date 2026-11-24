@@ -39,9 +39,11 @@
 - `vmm/acpi.rs`：RSDP + XSDT + SSDT（校验和全 0 验证）。
 - 待办：真机 bzImage rootfs 挂载（依赖 Windows WHPX vcpu 执行）。
 
-### M3：virtio-net
-- 用户态网络（tap/slug 或用户态栈），出口：host 上 `adb connect <guest-ip>:5555` 成功。
-
+### M3：virtio-net ✅ 代码完成（真机 TAP/adb 连通待 Windows WHPX）
+- `devices/virtio_net.rs`：rx/tx 双队列 virtio-net（VIRTIO_NET_HDR 12B、MAC+链路状态 config）；`NetBackend` trait + `LoopbackBackend` 回环后端。
+- `vmm/virtio_pci.rs`：`VirtioNetPci` 适配器（0x1AF4:0x1000，网络类 0x02，BAR0 0x100 MAC/链路 config、0x108 notify）。
+- 61 单测全绿 0 警告（含 tx→后端、后端→rx 注入、自环 roundtrip、缓冲不足报错、无帧 0 used）。
+- 待办：真机 TAP 后端（Windows TAP/WSL 网桥）+ guest 驱动探测 → adb over TCP。
 ### M4a：virtio-gpu 2D scanout
 - 实现 scanout → host 窗口呈现；`assist::AdbChannel::screenshot()` 走帧缓冲。
 - 出口：可截图。
