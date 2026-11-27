@@ -71,12 +71,14 @@ pub fn check_all() -> AvmResult<Vec<CheckItem>> {
             "当前宿主非 Windows；WHPX 仅 Windows 可用（M8 起支持 KVM/HVF）",
         ));
 
-        // Linux：预检 KVM 可用性（M8 前置）
+        // Linux：预检 KVM 可用性（M8：API 版本探测）
         if cfg!(target_os = "linux") {
-            items.push(if std::path::Path::new("/dev/kvm").exists() {
-                CheckItem::pass("/dev/kvm", "存在（M8 KVM 后端前置条件满足）")
-            } else {
-                CheckItem::fail("/dev/kvm", "不存在：KVM 未加载或无权限")
+            items.push(match crate::kvm::KvmHypervisor::new() {
+                Ok(h) => {
+                    let _ = h;
+                    CheckItem::pass("/dev/kvm", "打开成功且 API 版本 >= 12（KVM 后端可用）")
+                }
+                Err(e) => CheckItem::fail("/dev/kvm", &e.to_string()),
             });
         }
     }

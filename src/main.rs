@@ -31,12 +31,10 @@ fn main() {
         },
         "start" => {
             if args.iter().any(|a| a == "--toy") {
-                let hv: Box<dyn avm_hypervisor::Hypervisor> =
-                    match avm_hypervisor::whp::WhpHypervisor::new() {
-                        Ok(whp) => Box::new(whp),
-                        Err(_) => Box::new(avm_hypervisor::NullHypervisor),
-                    };
+                // M8：平台探测 WHPX（Windows）→ KVM（Linux）→ Null
+                let hv: Box<dyn avm_hypervisor::Hypervisor> = avm_hypervisor::detect();
                 let hv = &*hv;
+                println!("后端：{:?}", hv.backend());
                 match avm_vmm::boot_toy_guest(hv) {
                     Ok(_) => println!("toy guest 已 halt"),
                     Err(e) => {

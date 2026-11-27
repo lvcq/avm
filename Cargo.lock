@@ -94,6 +94,8 @@ name = "avm-hypervisor"
 version = "0.1.0"
 dependencies = [
  "avm-core",
+ "kvm-bindings",
+ "libc",
 ]
 
 [[package]]
@@ -489,6 +491,15 @@ name = "itoa"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bd1574e617a9a6c1f8f8181bd7e841e1f20e4277607ef28945765188d6284d4"
+
+[[package]]
+name = "kvm-bindings"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa4933174d0cc4b77b958578cd45784071cc5ae212c2d78fbd755aaaa6dfa71a"
+dependencies = [
+ "vmm-sys-util",
+]
 
 [[package]]
 name = "libc"

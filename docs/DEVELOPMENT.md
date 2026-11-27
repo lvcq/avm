@@ -68,10 +68,14 @@
 - `setup_tray` 为 NSH 存根；Windows 真机阶段接 feature `nsh`（NSH Tray API pin commit）。
 - 验证：86 单测全绿 0 警告；面板 E2E（panel→daemon 起服务：create→boot→stop→delete 全链）。
 - 面板关闭 = 隐藏到托盘：实例由 avmd 持有，面板只是客户端视图（架构约束保持）。
-### M8：KVM / HVF
-- `crates/hypervisor/` 增加 `kvm.rs` / `hvf.rs`，实现同一 trait；feature 或运行时探测选择。
-- 出口：Linux/macOS 可跑 M1–M5 同套流程。
-
+### M8：KVM / HVF 跨平台 ✅ 代码完成（KVM 真跑待嵌套虚拟化宿主）
+- `hypervisor/kvm.rs`：手写 ioctl FFI（与 WHPX 同风格）——/dev/kvm 打开 + API 版本 >= 12 校验、KVM_CREATE_VM/CREATE_VCPU/SET_USER_MEMORY_REGION（整块匿名 mmap slot 0）、KVM_RUN + kvm_run 解析（HLT/IO/MMIO 退出）、get/set regs+sregs（真模式 CS 归零）；ioctl 号按运行时 sizeof 计算。结构布局用 `kvm-bindings 0.10`（内核 kvm.h bindgen 正源）。
+- `hypervisor/hvf.rs`：HVF 存根（接口就位，FFI 待 macOS 宿主）。
+- `detect()`：WHPX → KVM → Null 平台探测；CLI start --toy 已切换。
+- doctor：Linux 下 KVM 检查升级为真实打开 + API 版本探测。
+- 验证：91 单测全绿 0 警告（ioctl 编码对照内核 uapi、无 /dev/kvm 优雅报错）。
+- 坑：①kvm-bindings 的 kvm_run 用 bindgen 匿名联合（`__bindgen_anon_1.io/.mmio`），union 在 exit_reason 与若干字段之后，不要手算偏移；②kvm_segment 的 `type` 字段绑定名是 `type_`；③子 crate 忘加 `edition.workspace = true` 报 Rust 2015 async 错误。
+- 待办：带嵌套虚拟化（VMX/SVM）的宿主真跑 KVM toy guest。
 ### M9：3D 加速（后置）
 - 见 DESIGN.md §6。`crates/gfx/` 届时新建。
 

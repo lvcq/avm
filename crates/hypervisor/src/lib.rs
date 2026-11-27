@@ -3,7 +3,35 @@
 //! 分层契约：vmm 只依赖本 crate 的 `Hypervisor` trait；
 //! 平台实现（whp / kvm / hvf）各自独立模块，编译期 feature 选择。
 
+#[cfg(target_os = "linux")]
+pub mod kvm;
+#[cfg(not(target_os = "linux"))]
+pub mod kvm {
+    //! 非 Linux 平台存根：KVM 仅 Linux 可用。
+    use crate::{Backend, Hypervisor, Partition};
+    use avm_core::{AvmError, AvmResult};
+
+    /// 非 Linux 平台的 KVM 存根。
+    pub struct KvmHypervisor;
+
+    impl KvmHypervisor {
+        pub fn new() -> AvmResult<Self> {
+            Err(AvmError::Hypervisor("KVM 仅 Linux 可用".into()))
+        }
+    }
+
+    impl Hypervisor for KvmHypervisor {
+        fn backend(&self) -> Backend {
+            Backend::KVM
+        }
+        fn create_partition(&self, _vcpus: u32, _memory_mib: u64) -> AvmResult<Box<dyn Partition>> {
+            Err(AvmError::Hypervisor("KVM 仅 Linux 可用".into()))
+        }
+    }
+}
+
 pub mod doctor;
+pub mod hvf;
 pub mod whp;
 
 use avm_core::{AvmError, AvmResult};
@@ -59,9 +87,33 @@ impl Hypervisor for NullHypervisor {
     }
 }
 
+/// 平台探测：WHPX（Windows）→ KVM（Linux）→ Null 依次尝试。
+pub fn detect() -> Box<dyn Hypervisor> {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(h) = whp::WhpHypervisor::new() {
+            return Box::new(h);
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(h) = kvm::KvmHypervisor::new() {
+            return Box::new(h);
+        }
+    }
+    Box::new(NullHypervisor)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detect_returns_something_sane() {
+        let h = detect();
+        let ok = matches!(h.backend(), Backend::WHPX | Backend::KVM | Backend::Null);
+        assert!(ok, "detect 应返回真实后端或 Null：{:?}", h.backend());
+    }
 
     #[test]
     fn null_backend_reports_null() {

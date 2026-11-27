@@ -5,4 +5,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+kvm-bindings = { workspace = true }
+libc = { workspace = true }
 avm-core = { workspace = true }
