@@ -102,6 +102,8 @@ version = "0.1.0"
 dependencies = [
  "avm-client",
  "avm-core",
+ "avm-daemon",
+ "tokio",
 ]
 
 [[package]]

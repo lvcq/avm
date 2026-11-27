@@ -7,3 +7,7 @@ license.workspace = true
 [dependencies]
 avm-core = { workspace = true }
 avm-client = { workspace = true }
+
+[dev-dependencies]
+avm-daemon = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net"] }

@@ -63,10 +63,11 @@
 - CLI：`avm daemon --listen` / `list` / `create` / `boot` / `stop` / `delete`，`--url` 指定 daemon。
 - 验证：84 单测全绿 0 警告；E2E 实跑（daemon 7879 + CLI create→boot→list→stop→delete 全链路）。
 - 坑：①`#[tokio::test]` 默认 current_thread runtime，测试内 ureq 阻塞调用会饿死同 runtime 的 serve 任务→用 flavor="multi_thread"；②pkill -f "cargo test" 会连自己的 bash 包装一起杀；③axum 0.8 路由捕获用 {id}（:id 会 panic）；④grep -c 无匹配 exit 1 会断 && 链。
-### M7：NSH 面板
-- `panel`：接入 NSH UI 与 `set_tray`；关闭按钮 → 隐藏到托盘。
-- 出口：面板可管理实例。
-
+### M7：NSH 面板 + 托盘 ✅ 代码完成（原生托盘壳待 Windows）
+- `panel`：视图模型与 GUI 解耦——`Panel`（daemon 客户端 + 视图缓存 + create/boot/stop/delete 动作）、`PanelView::render` 对齐文本表、`TrayMenu`/`TrayItem`/`TrayAction` 托盘菜单模型（set_tray 数据源）、`on_tray_action` 事件数据路径。
+- `setup_tray` 为 NSH 存根；Windows 真机阶段接 feature `nsh`（NSH Tray API pin commit）。
+- 验证：86 单测全绿 0 警告；面板 E2E（panel→daemon 起服务：create→boot→stop→delete 全链）。
+- 面板关闭 = 隐藏到托盘：实例由 avmd 持有，面板只是客户端视图（架构约束保持）。
 ### M8：KVM / HVF
 - `crates/hypervisor/` 增加 `kvm.rs` / `hvf.rs`，实现同一 trait；feature 或运行时探测选择。
 - 出口：Linux/macOS 可跑 M1–M5 同套流程。
