@@ -9,6 +9,8 @@ pub struct CheckItem {
     pub name: String,
     pub ok: bool,
     pub detail: String,
+    /// 告警项：不影响整体通过，但报告用 [⚠] 标出
+    pub warning: bool,
 }
 
 impl CheckItem {
@@ -17,6 +19,16 @@ impl CheckItem {
             name: name.into(),
             ok: false,
             detail: detail.into(),
+            warning: false,
+        }
+    }
+
+    fn warn(name: &str, detail: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ok: true,
+            detail: detail.into(),
+            warning: true,
         }
     }
 
@@ -25,7 +37,20 @@ impl CheckItem {
             name: name.into(),
             ok: true,
             detail: detail.into(),
+            warning: false,
         }
+    }
+}
+
+/// GPU/Vulkan 支持检测（M9 前置告警，见 docs/PLAN-M9.md §7）。
+/// 告警不失败：VMM 与 2D 自动化不需要 GPU。
+pub fn check_gpu() -> CheckItem {
+    let st = crate::gpucheck::detect();
+    match st {
+        crate::gpucheck::VulkanStatus::Full => {
+            CheckItem::pass("Vulkan", crate::gpucheck::VulkanStatus::Full.detail())
+        }
+        other => CheckItem::warn("Vulkan 支持告警", other.detail()),
     }
 }
 
@@ -83,6 +108,9 @@ pub fn check_all() -> AvmResult<Vec<CheckItem>> {
         }
     }
 
+    // GPU/Vulkan：告警级（非失败项）
+    items.push(check_gpu());
+
     Ok(items)
 }
 
@@ -91,7 +119,13 @@ pub fn report() -> AvmResult<bool> {
     let items = check_all()?;
     let mut all_ok = true;
     for it in &items {
-        let mark = if it.ok { "[✓]" } else { "[✗]" };
+        let mark = if !it.ok {
+            "[✗]"
+        } else if it.warning {
+            "[⚠]"
+        } else {
+            "[✓]"
+        };
         println!("{mark} {} —— {}", it.name, it.detail);
         if !it.ok {
             all_ok = false;

@@ -197,7 +197,6 @@ pub fn setup_tray(_menu: &TrayMenu) -> AvmResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
 
     /// 起 daemon + 全链路面板操作（multi_thread：client 阻塞调用）。
     #[tokio::test(flavor = "multi_thread")]

@@ -31,6 +31,7 @@ pub mod kvm {
 }
 
 pub mod doctor;
+pub mod gpucheck;
 pub mod hvf;
 pub mod whp;
 
