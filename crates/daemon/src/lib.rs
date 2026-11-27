@@ -16,6 +16,8 @@ pub fn run_daemon(listen: SocketAddr) -> AvmResult<()> {
 
 /// 在当前 tokio runtime 中启动服务（测试/嵌入用）。
 pub async fn serve(listen: SocketAddr) -> AvmResult<()> {
+    avm_core::log::init_from_env();
+    avm_core::log::info(&format!("avmd 启动，监听 {listen}"));
     let store = VmStore::shared();
     let app = avm_api::router(store);
     let listener = tokio::net::TcpListener::bind(listen)
@@ -105,6 +107,7 @@ impl InstanceRegistry {
             .map_err(|_| avm_core::AvmError::Ipc("registry 锁中毒".into()))?;
         match map.get_mut(id) {
             Some(s) => {
+                avm_core::log::info(&format!("实例 {id} 状态: {:?} -> {:?}", *s, state));
                 *s = state;
                 Ok(())
             }

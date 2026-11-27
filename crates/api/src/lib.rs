@@ -101,6 +101,7 @@ impl VmStore {
             ));
         }
         vm.state = to.to_string();
+        avm_core::log::info(&format!("实例 {id} 状态迁移 -> {to}"));
         Ok(vm.clone())
     }
 }

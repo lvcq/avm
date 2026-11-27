@@ -36,6 +36,8 @@ impl std::error::Error for AvmError {}
 
 pub type AvmResult<T> = Result<T, AvmError>;
 
+pub mod log;
+
 /// VM 实例状态机（pool 管理与面板展示共用）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum InstanceState {

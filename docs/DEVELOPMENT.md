@@ -100,3 +100,14 @@ cargo build --workspace
 cargo test --workspace
 cargo run -- doctor          # M0 起逐步填充真实检测
 ```
+
+## 日志系统（avm-core::log）
+
+- 全局单例：单写线程 + 有界通道（8192）；队列满时**非阻塞丢弃并计数**，写线程恢复后补记丢弃摘要——绝不阻塞 VM 线程
+- 超长正文：单行 >8KiB 自动截断（UTF-8 字符边界安全），`truncate_body` 可测
+- 分级：TRACE/DEBUG/INFO/WARN/ERROR；`AVM_LOG_LEVEL` 环境变量可配
+- 按天分文件 `avm-YYYYMMDD.log`；`AVM_LOG_DIR` 配目录、`AVM_LOG_RETENTION_DAYS` 配保留天数
+- 过期清理：init 与每次跨天时，按文件名日期删除超期文件（非日志文件不动）
+- 健壮性：文件被外部删除/轮转时写线程自动重开（append 语义防静默丢失）
+- 接入点：daemon `serve()` 启动即 init_from_env；api 状态迁移、registry set_state 记 INFO
+- 测试注意：全局单例跨测试共享，内容断言测试必须经 `TEST_LOCK` 串行
