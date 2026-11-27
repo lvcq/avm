@@ -62,6 +62,36 @@ fn main() {
                 std::process::exit(3);
             }
         }
+        "verify" => {
+            // 真机分段验证：Stage1 doctor → Stage2 toy guest 真实串口输出
+            println!("== Stage 1: doctor ==");
+            match avm_hypervisor::doctor::report() {
+                Ok(true) => println!("Stage 1 PASS"),
+                _ => {
+                    eprintln!("Stage 1 FAIL（环境未就绪，先开 WHPX/KVM）");
+                    std::process::exit(1);
+                }
+            }
+            println!("== Stage 2: toy guest 串口 ==");
+            let hv: Box<dyn avm_hypervisor::Hypervisor> = avm_hypervisor::detect();
+            println!("后端：{:?}", hv.backend());
+            match avm_vmm::boot_toy_guest(&*hv) {
+                Ok(out) => {
+                    let text = String::from_utf8_lossy(&out);
+                    println!("串口输出：{text}");
+                    if out == b"avm toy guest OK\0" {
+                        println!("Stage 2 PASS");
+                    } else {
+                        eprintln!("Stage 2 FAIL（输出不匹配）");
+                        std::process::exit(2);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Stage 2 FAIL：{e}");
+                    std::process::exit(2);
+                }
+            }
+        }
         "list" => {
             let c = Client::new(&base(&args));
             match c.list() {
@@ -145,5 +175,5 @@ fn die(e: &avm_core::AvmError) {
 
 fn help() {
     println!("avm —— Android x86_64 轻量运行时与设备底座");
-    println!("用法: avm <doctor|start|daemon|list|create|boot|stop|delete>");
+    println!("用法: avm <doctor|verify|start|daemon|list|create|boot|stop|delete>");
 }

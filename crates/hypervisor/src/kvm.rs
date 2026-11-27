@@ -263,10 +263,23 @@ impl Partition for KvmPartition {
             KVM_EXIT_HLT => Ok(VcpuExit::Halt),
             KVM_EXIT_IO => {
                 let io = unsafe { &(*run).__bindgen_anon_1.io };
+                // OUT（direction=1）时从 kvm_run data_offset 处取真实写入数据
+                let data = if io.direction == 1 && io.size > 0 && io.size <= 4 {
+                    unsafe {
+                        let base = (run as *mut u8).add(io.data_offset as usize);
+                        let mut v = 0u32;
+                        for i in 0..io.size as usize {
+                            v |= (*base.add(i) as u32) << (i * 8);
+                        }
+                        v
+                    }
+                } else {
+                    0
+                };
                 Ok(VcpuExit::Io {
                     port: io.port,
                     size: io.size,
-                    data: 0, // 帧数据在 kvm_run data_offset 处，Io 循环层按需读取
+                    data,
                 })
             }
             KVM_EXIT_MMIO => {
