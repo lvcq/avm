@@ -74,6 +74,10 @@ M9 后置理由：Windows host 适配存在不确定性（`RutabagaDescriptor` �
 
 ## 6. 3D 加速实施要点（M9）
 
+> ⚠️ M9 路线已修正：Venus 官方不支持 Windows 宿主（Linux fd / Android dma_buf 限定），
+> 主路径改为 **gfxstream**（gfxstream_vk 在 Windows 已工作多年）。
+> 详细工作流、风险与决策点见 docs/PLAN-M9.md。
+
 - Guest 侧 Venus / gfxstream 驱动由预构建 AOSP 镜像提供，不自研。
 - `rutabaga_gfx` 处理 3D hypercall、Venus capset、资源与 fence；`vhost-device-gpu` 提供 virtio 1.2 设备模型。
 - 自研范围：设备接入自有总线、`ash` 初始化 host Vulkan、帧缓冲呈现到窗口、Windows handle 与线程适配。
