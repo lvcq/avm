@@ -70,7 +70,25 @@ Guest (Android x86_64)
 | 3D 帧率不满足重度游戏 | 中 | 2D 路径（M4a/M4b）已保底自动化；3D 是增强不是门槛 |
 | gfxstream 版本漂移 | 低 | pin commit + 变更日志盯订阅 |
 
-## 6. 里程碑时序与依赖
+## 7. 宿主无 Vulkan 的处理（W9.0 关键分支）
+
+宿主 GPU 驱动未装 Vulkan ICD（或 ICD 与 WHPX 虚拟化冲突）时的三级降级：
+
+| 级别 | 方案 | 代价 | 判据 |
+|------|------|------|------|
+| L0 正常 | 宿主 Vulkan ICD 直通 | 无 | `vkCreateInstance` 成功且 device 数 ≥ 1 |
+| L1 **ANGLE→D3D** | gfxstream 后端走 ANGLE（ translating GLES→D3D11/12）；gfxstream 自带 ANGLE 支持，无需宿主 Vulkan | 3D 性能 ~70-90% of L0；Vulkan-only 游戏不可用 | 游戏为 GLES 主体时首选，Windows 遍地 D3D 驱动，成功率最高 |
+| L2 **软件 Vulkan** | 宿主装 lavapipe（Mesa 软件渲染器）或 SwiftShader，gfxstream_vk 照常跑 | CPU 光栅化，帧率低；但功能完整，联调/CI 不受 GPU 驱动拖累 | 预研与无 GPU 云机联调用 |
+| L3 2D 保底 | 退回 M4a/M4b 2D scanout（当前已实现） | 无 3D 加速 | 自动化基本功能不受影响，永久兜底 |
+
+**doctor 集成**：`avm doctor` 增加 GPU 探测——`ash` 尝试建 instance 枚举 device（L0），失败则检测 `VK_DRIVER_FILES`/lavapipe（L2），两者皆无提示安装流程并标记 L3。`avm verify` 输出当前可用级别，选后端时显式 `--gfx {auto,angle,sw,2d}`。
+
+**安装路径（Windows 无 Vulkan 时）**：
+1. 先确认显卡驱动官网版是否带 Vulkan（NVIDIA/AMD 默认带；Intel 核显较旧则无）
+2. 不想动驱动 → 直接下 SwiftShader Windows 构建放 `VK_ICD_FILENAMES` 指向（L2，零侵入）
+3. 长期运行 → ANGLE 路线（L1），gfxstream 预构建库自带
+
+## 8. 里程碑时序与依赖
 
 ```
 真机 WHPX 验证（当前关键路径）
